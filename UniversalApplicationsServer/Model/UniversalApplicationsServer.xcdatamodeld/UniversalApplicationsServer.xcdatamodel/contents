@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model name="" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1171" systemVersion="11D50" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="Application" representedClassName="Application" syncable="YES">
+        <attribute name="appleID" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="client" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="Client" inverseName="application" inverseEntity="Client" syncable="YES"/>
+    </entity>
+    <entity name="Client" representedClassName="Client" syncable="YES">
+        <attribute name="country" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="creationDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="deviceToken" optional="YES" attributeType="Binary" syncable="YES"/>
+        <attribute name="email" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="guid" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="macAddress" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="modificationDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="phoneNumber" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="receiverIP" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="senderIP" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="application" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Application" inverseName="client" inverseEntity="Application" syncable="YES"/>
+        <relationship name="clientContacts" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="ClientContacts" inverseName="client" inverseEntity="ClientContacts" syncable="YES"/>
+    </entity>
+    <entity name="ClientContacts" representedClassName="ClientContacts" syncable="YES">
+        <attribute name="receivedData" optional="YES" attributeType="Binary" syncable="YES"/>
+        <relationship name="client" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Client" inverseName="clientContacts" inverseEntity="Client" indexed="YES" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="Client" positionX="160" positionY="192" width="128" height="210"/>
+        <element name="ClientContacts" positionX="160" positionY="192" width="128" height="75"/>
+        <element name="Application" positionX="160" positionY="192" width="128" height="90"/>
+    </elements>
+</model>
