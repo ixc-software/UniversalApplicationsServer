@@ -20,7 +20,7 @@
 #import "Application.h"
 
 //@interface ExternalDataController (delegate) <SBApplicationDelegate>
-//@end
+///@end
 
 
 @interface ExternalDataController () 
