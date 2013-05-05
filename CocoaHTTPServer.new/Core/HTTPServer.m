@@ -104,8 +104,8 @@ static const int httpLogLevel = HTTP_LOG_LEVEL_INFO; // | HTTP_LOG_FLAG_TRACE;
 	
 	// Release all instance variables
 	
-	dispatch_release(serverQueue);
-	dispatch_release(connectionQueue);
+	//dispatch_release(serverQueue);
+	//dispatch_release(connectionQueue);
 	
 	[asyncSocket setDelegate:nil delegateQueue:NULL];
 	

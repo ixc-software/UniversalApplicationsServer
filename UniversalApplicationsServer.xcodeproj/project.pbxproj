@@ -45,6 +45,7 @@
 		FA1E7499154EFAD300FE0953 /* ClientContacts.m in Sources */ = {isa = PBXBuildFile; fileRef = FA1E7498154EFAD300FE0953 /* ClientContacts.m */; };
 		FA1E74A2154F045F00FE0953 /* Application.m in Sources */ = {isa = PBXBuildFile; fileRef = FA1E74A1154F045F00FE0953 /* Application.m */; };
 		FA1E74C0154F12EA00FE0953 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA1E74BF154F12EA00FE0953 /* Security.framework */; };
+		FA9267FA1736CF7E0029ACB5 /* GameScore.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9267F91736CF7E0029ACB5 /* GameScore.m */; };
 		FA99E9C6154F20BF005D76B9 /* SecurityInterface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA99E9C5154F20BF005D76B9 /* SecurityInterface.framework */; };
 /* End PBXBuildFile section */
 
@@ -124,6 +125,9 @@
 		FA1E74A0154F045F00FE0953 /* Application.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Application.h; sourceTree = "<group>"; };
 		FA1E74A1154F045F00FE0953 /* Application.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Application.m; sourceTree = "<group>"; };
 		FA1E74BF154F12EA00FE0953 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		FA345B9117361580006241ED /* UniversalApplicationsServer000002.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = UniversalApplicationsServer000002.xcdatamodel; sourceTree = "<group>"; };
+		FA9267F81736CF7E0029ACB5 /* GameScore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GameScore.h; sourceTree = "<group>"; };
+		FA9267F91736CF7E0029ACB5 /* GameScore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GameScore.m; sourceTree = "<group>"; };
 		FA99E9C5154F20BF005D76B9 /* SecurityInterface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SecurityInterface.framework; path = System/Library/Frameworks/SecurityInterface.framework; sourceTree = SDKROOT; };
 		FA99E9EF154FE601005D76B9 /* UniversalApplicationsServer000001.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = UniversalApplicationsServer000001.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -333,6 +337,8 @@
 		FA1E7490154EFA9600FE0953 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				FA9267F81736CF7E0029ACB5 /* GameScore.h */,
+				FA9267F91736CF7E0029ACB5 /* GameScore.m */,
 				FA1E7491154EFA9600FE0953 /* UniversalApplicationsServer.xcdatamodeld */,
 				FA001E9B154FF6C900D36002 /* Client.h */,
 				FA001E9C154FF6C900D36002 /* Client.m */,
@@ -418,7 +424,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd $CONFIGURATION_BUILD_DIR\ntar cvzpf $PRODUCT_NAME.tgz $PRODUCT_NAME.app\nscp $PRODUCT_NAME.tgz alex@mac1.ixcglobal.com:~\nssh alex@mac1.ixcglobal.com killall $PRODUCT_NAME\nssh alex@mac1.ixcglobal.com tar xvzpf $PRODUCT_NAME.tgz\nssh alex@mac1.ixcglobal.com open $PRODUCT_NAME.app";
+			shellScript = "cd $CONFIGURATION_BUILD_DIR\ntar cvzpf $PRODUCT_NAME.tgz $PRODUCT_NAME.app\n#scp $PRODUCT_NAME.tgz alex@mac1.ixcglobal.com:~\n#ssh alex@mac1.ixcglobal.com killall $PRODUCT_NAME\n#ssh alex@mac1.ixcglobal.com tar xvzpf $PRODUCT_NAME.tgz\n#ssh alex@mac1.ixcglobal.com open $PRODUCT_NAME.app";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -458,6 +464,7 @@
 				FA1E7499154EFAD300FE0953 /* ClientContacts.m in Sources */,
 				FA1E74A2154F045F00FE0953 /* Application.m in Sources */,
 				FA001E9D154FF6C900D36002 /* Client.m in Sources */,
+				FA9267FA1736CF7E0029ACB5 /* GameScore.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -544,6 +551,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UniversalApplicationsServer/UniversalApplicationsServer-Prefix.pch";
 				INFOPLIST_FILE = "UniversalApplicationsServer/UniversalApplicationsServer-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -555,6 +563,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "UniversalApplicationsServer/UniversalApplicationsServer-Prefix.pch";
 				INFOPLIST_FILE = "UniversalApplicationsServer/UniversalApplicationsServer-Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -587,10 +596,11 @@
 		FA1E7491154EFA9600FE0953 /* UniversalApplicationsServer.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				FA345B9117361580006241ED /* UniversalApplicationsServer000002.xcdatamodel */,
 				FA99E9EF154FE601005D76B9 /* UniversalApplicationsServer000001.xcdatamodel */,
 				FA1E7492154EFA9600FE0953 /* UniversalApplicationsServer.xcdatamodel */,
 			);
-			currentVersion = FA99E9EF154FE601005D76B9 /* UniversalApplicationsServer000001.xcdatamodel */;
+			currentVersion = FA345B9117361580006241ED /* UniversalApplicationsServer000002.xcdatamodel */;
 			path = UniversalApplicationsServer.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

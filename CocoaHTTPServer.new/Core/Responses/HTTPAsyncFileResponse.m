@@ -232,17 +232,17 @@ static const int httpLogLevel = HTTP_LOG_LEVEL_WARN; // | HTTP_LOG_FLAG_TRACE;
 	});
 	
 	int theFileFD = fileFD;
-	dispatch_source_t theReadSource = readSource;
+	//dispatch_source_t theReadSource = readSource;
 	
 	dispatch_source_set_cancel_handler(readSource, ^{
 		
 		// Do not access self from within this block in any way, shape or form.
-		// 
+		//
 		// Note: You access self if you reference an iVar.
 		
 		HTTPLogTrace2(@"%@: cancelBlock - Close fd[%i]", THIS_FILE, theFileFD);
 		
-		dispatch_release(theReadSource);
+		//dispatch_release(theReadSource);
 		close(theFileFD);
 	});
 	
@@ -390,8 +390,8 @@ static const int httpLogLevel = HTTP_LOG_LEVEL_WARN; // | HTTP_LOG_FLAG_TRACE;
 {
 	HTTPLogTrace();
 	
-	if (readQueue)
-		dispatch_release(readQueue);
+//	if (readQueue)
+//		dispatch_release(readQueue);
 	
 	if (readBuffer)
 		free(readBuffer);

@@ -24,9 +24,18 @@
         <attribute name="receivedData" optional="YES" attributeType="Binary" syncable="YES"/>
         <relationship name="client" minCount="1" maxCount="1" deletionRule="Nullify" destinationEntity="Client" inverseName="clientContacts" inverseEntity="Client" indexed="YES" syncable="YES"/>
     </entity>
+    <entity name="GameScore" representedClassName="GameScore" syncable="YES">
+        <attribute name="attempts" optional="YES" attributeType="Integer 64" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="date" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="difficultLevel" optional="YES" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <attribute name="gameTime" optional="YES" attributeType="Integer 64" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="name" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="photo" optional="YES" attributeType="Binary" syncable="YES"/>
+    </entity>
     <elements>
         <element name="Application" positionX="160" positionY="192" width="128" height="90"/>
         <element name="Client" positionX="160" positionY="192" width="128" height="240"/>
         <element name="ClientContacts" positionX="160" positionY="192" width="128" height="75"/>
+        <element name="GameScore" positionX="160" positionY="192" width="128" height="135"/>
     </elements>
 </model>

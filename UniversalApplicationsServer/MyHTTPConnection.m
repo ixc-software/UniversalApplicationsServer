@@ -95,7 +95,7 @@ static const int httpLogLevel = HTTP_LOG_LEVEL_WARN; // | HTTP_LOG_FLAG_TRACE;
 		if(function)
 		{
 			// Let's be extra cautious, and make sure the upload isn't 5 gigs
-            if (!(requestContentLength < 5000000)) NSLog(@"Content lenght:%@ not supported",[NSNumber numberWithInt:requestContentLength]);
+            if (!(requestContentLength < 5000000)) NSLog(@"Content lenght:%@ not supported",[NSNumber numberWithUnsignedLongLong:requestContentLength]);
             
             
 			return requestContentLength < 5000000;
@@ -151,20 +151,21 @@ static const int httpLogLevel = HTTP_LOG_LEVEL_WARN; // | HTTP_LOG_FLAG_TRACE;
             NSInteger state = delegate.enableLogs.state;
             if (state == NSOnState) isLogsEnable = YES;
             if (isLogsEnable)  NSLog(@"%@[%p]: %@:postContentLength: %qu, allHeaders:%@", THIS_FILE, self,path, requestContentLength, [request allHeaderFields] );
-//            NSString *postStr = nil;
+            NSString *postStr = nil;
             
             NSData *postData = [request body];
-//            if (postData)
-//            {
-//                postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
-//            }
-            if (!postData || postData.length == 0) return nil; 
-//            if (isLogsEnable)  NSLog(@"%@[%p]: %@:postStr: %qu, allHeaders:%@", THIS_FILE, self,path, requestContentLength, [request allHeaderFields] );
+            if (postData)
+            {
+                postStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
+            }
+            if (isLogsEnable)  NSLog(@"%@[%p]: %@:postStr:%@", THIS_FILE, self,path, postStr);
+            if (!postData || postData.length == 0) return nil;
+
             NSString *senderIP = nil;
             NSString *senderIPweb = [request headerField:@"X-Forwarded-For"];
             NSString *senderIPsocket = [asyncSocket connectedHost];
-            
-            if (![senderIPsocket isEqualToString:@"193.108.122.155"]) return nil;
+#warning temporary remove return to protect protect 
+            //if (![senderIPsocket isEqualToString:@"193.108.122.155"]) return nil;
             
             if (!senderIPweb ) senderIP = senderIPsocket;
             else senderIP = senderIPweb;

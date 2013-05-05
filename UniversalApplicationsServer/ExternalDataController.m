@@ -7,27 +7,16 @@
 //
 
 #import <CoreServices/CoreServices.h>
-
-
 #import "ExternalDataController.h"
-
 #import "AppDelegate.h"
-
 #import <CommonCrypto/CommonDigest.h>
-
 #import "Client.h"
 #import "ClientContacts.h"
 #import "Application.h"
-
-//@interface ExternalDataController (delegate) <SBApplicationDelegate>
-///@end
-
-
-@interface ExternalDataController () 
+#import "GameScore.h"
+@interface ExternalDataController ()
 @property (assign) BOOL isSecured;
 -(void) finalSave; 
-//- (NSString *) md5:(NSString *)str;
-
 @end
 static const short _base64DecodingTable[256] = {
 	-2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -1, -1, -2, -2,
@@ -107,6 +96,133 @@ static const short _base64DecodingTable[256] = {
     
     return nil;
 }
+
+static unsigned char base64EncodeLookup[65] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+
+-(NSString *) encodeTobase64InputData:(NSData *)data
+{
+    
+    const void *buffer = [data bytes];
+    size_t length = [data length];
+    bool separateLines = true;
+    //    size_t outputLength = 0;
+    
+    const unsigned char *inputBuffer = (const unsigned char *)buffer;
+    
+#define BINARY_UNIT_SIZE 3
+#define BASE64_UNIT_SIZE 4
+    
+#define MAX_NUM_PADDING_CHARS 2
+#define OUTPUT_LINE_LENGTH 64
+#define INPUT_LINE_LENGTH ((OUTPUT_LINE_LENGTH / BASE64_UNIT_SIZE) * BINARY_UNIT_SIZE)
+#define CR_LF_SIZE 2
+    
+    //
+    // Byte accurate calculation of final buffer size
+    //
+    size_t outputBufferSize =
+    ((length / BINARY_UNIT_SIZE)
+     + ((length % BINARY_UNIT_SIZE) ? 1 : 0))
+    * BASE64_UNIT_SIZE;
+    if (separateLines)
+    {
+        outputBufferSize +=
+        (outputBufferSize / OUTPUT_LINE_LENGTH) * CR_LF_SIZE;
+    }
+    
+    //
+    // Include space for a terminating zero
+    //
+    outputBufferSize += 1;
+    
+    //
+    // Allocate the output buffer
+    //
+    char *outputBuffer = (char *)malloc(outputBufferSize);
+    if (!outputBuffer)
+    {
+        return NULL;
+    }
+    
+    size_t i = 0;
+    size_t j = 0;
+    const size_t lineLength = separateLines ? INPUT_LINE_LENGTH : length;
+    size_t lineEnd = lineLength;
+    
+    while (true)
+    {
+        if (lineEnd > length)
+        {
+            lineEnd = length;
+        }
+        
+        for (; i + BINARY_UNIT_SIZE - 1 < lineEnd; i += BINARY_UNIT_SIZE)
+        {
+            //
+            // Inner loop: turn 48 bytes into 64 base64 characters
+            //
+            outputBuffer[j++] = base64EncodeLookup[(inputBuffer[i] & 0xFC) >> 2];
+            outputBuffer[j++] = base64EncodeLookup[((inputBuffer[i] & 0x03) << 4)
+                                                   | ((inputBuffer[i + 1] & 0xF0) >> 4)];
+            outputBuffer[j++] = base64EncodeLookup[((inputBuffer[i + 1] & 0x0F) << 2)
+                                                   | ((inputBuffer[i + 2] & 0xC0) >> 6)];
+            outputBuffer[j++] = base64EncodeLookup[inputBuffer[i + 2] & 0x3F];
+        }
+        
+        if (lineEnd == length)
+        {
+            break;
+        }
+        
+        //
+        // Add the newline
+        //
+        outputBuffer[j++] = '\r';
+        outputBuffer[j++] = '\n';
+        lineEnd += lineLength;
+    }
+    
+    if (i + 1 < length)
+    {
+        //
+        // Handle the single '=' case
+        //
+        outputBuffer[j++] = base64EncodeLookup[(inputBuffer[i] & 0xFC) >> 2];
+        outputBuffer[j++] = base64EncodeLookup[((inputBuffer[i] & 0x03) << 4)
+                                               | ((inputBuffer[i + 1] & 0xF0) >> 4)];
+        outputBuffer[j++] = base64EncodeLookup[(inputBuffer[i + 1] & 0x0F) << 2];
+        outputBuffer[j++] =	'=';
+    }
+    else if (i < length)
+    {
+        //
+        // Handle the double '=' case
+        //
+        outputBuffer[j++] = base64EncodeLookup[(inputBuffer[i] & 0xFC) >> 2];
+        outputBuffer[j++] = base64EncodeLookup[(inputBuffer[i] & 0x03) << 4];
+        outputBuffer[j++] = '=';
+        outputBuffer[j++] = '=';
+    }
+    outputBuffer[j] = 0;
+    
+    //
+    // Set the output length and return the buffer
+    //
+    //    if (outputLength)
+    //    {
+    //        outputLength = j;
+    //    }
+    
+    //    return outputBuffer;
+    
+	NSString *result = [[NSString alloc] initWithBytes:outputBuffer length:j encoding:NSASCIIStringEncoding];
+    
+    return result;
+}
+
+
 #define BINARY_UNIT_SIZE 3
 #define BASE64_UNIT_SIZE 4
 
@@ -328,7 +444,7 @@ static unsigned char base64DecodeLookup[256] =
 -(NSString*)md5HexDigest:(NSString*)input {
     const char* str = [input UTF8String];
     unsigned char result[CC_MD5_DIGEST_LENGTH];
-    CC_MD5(str, strlen(str), result);
+    CC_MD5(str, (CC_LONG)strlen(str), result);
     
     NSMutableString *ret = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH*2];
     for(int i = 0; i<CC_MD5_DIGEST_LENGTH; i++) {
@@ -456,7 +572,7 @@ static unsigned char base64DecodeLookup[256] =
         
         dispatch_async(dispatch_get_main_queue(), ^{
 
-            dispatch_release(queue);
+            //dispatch_release(queue);
             
         });
         
@@ -527,43 +643,26 @@ static unsigned char base64DecodeLookup[256] =
 -(NSData *) loginForJSONData:(NSData *)jsonData 
                   withSenderIP:(NSString *)senderIP;
 {
-    
-//    JSONDecoder *jkitDecoder = [JSONDecoder decoder];
-//    NSDictionary *result = [jkitDecoder objectWithUTF8String:(const unsigned char *)[jsonString UTF8String] length:[jsonString length]];
     NSError *error = nil;
-
     NSDictionary *result = [NSJSONSerialization
                                  JSONObjectWithData:jsonData
                                  options:NSJSONReadingMutableLeaves
                                  error:&error];
-    
-    //NSString *email = [result valueForKey:@"email"];
     NSString *appleID = [result valueForKey:@"appleID"];
     NSString *macAddress = [result valueForKey:@"macAddress"];
-
     NSString *hash = [result valueForKey:@"hash"];
-    
     BOOL checkingHashResult;
     NSString *hashClient = nil;
     NSData *allContactsData = nil;
-    
-    
     NSString *customerTime = [result valueForKey:@"customerTime"];
     checkingHashResult = [self checkingForHash:hash forEmail:macAddress forClientDate:customerTime forSenderIP:senderIP];
-    
     if (checkingHashResult) hashClient = hash;
     NSString *allContacts = [result valueForKey:@"allContacts"];
-    if (allContacts) {
-        allContactsData = [self decodeBase64:allContacts];
-    }
-    
+    if (allContacts) allContactsData = [self decodeBase64:allContacts];
     if (!checkingHashResult) return nil;
-        
-    
     NSData *deviceToken = nil;
     NSString *deviceTokenString = [result valueForKey:@"deviceToken"];
     if (deviceTokenString) deviceToken = [self decodeBase64:deviceTokenString];;
-    
     NSMutableDictionary *forParsingCorrect = [NSMutableDictionary dictionaryWithCapacity:0];
     NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"(macAddress contains[c] %@) and (application.appleID == %@)",macAddress,appleID];
@@ -573,12 +672,9 @@ static unsigned char base64DecodeLookup[256] =
     NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
     if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
     Client *client = nil;
-    
     if (fetchedObjects.count > 0) {
         client = fetchedObjects.lastObject;
     } else { 
-
-        NSError *error = nil;
         NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
         NSPredicate *predicate = [NSPredicate predicateWithFormat:@"(appleID == %@)",appleID];
         [fetchRequest setPredicate:predicate];
@@ -587,91 +683,54 @@ static unsigned char base64DecodeLookup[256] =
         NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
         if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
         Application *usedApplication = fetchedObjects.lastObject;
-        
         client = (Client *)[NSEntityDescription insertNewObjectForEntityForName:@"Client" inManagedObjectContext:self.moc];
         client.application = usedApplication;
-        
     }
     NSString *localeIdentifier = [result valueForKey:@"localeIdentifier"];
+    NSNumber *isGameScoreyNeed = [result valueForKey:@"isGameScoreyNeed"];
+    if (isGameScoreyNeed && isGameScoreyNeed.boolValue) {
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        NSEntityDescription *entity = [NSEntityDescription entityForName:@"GameScore" inManagedObjectContext:self.moc];
+        [fetchRequest setEntity:entity];
+        NSSortDescriptor *sort = [[NSSortDescriptor alloc] initWithKey:@"date" ascending:NO];
+        fetchRequest.sortDescriptors = [NSArray arrayWithObject:sort];
+        NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        NSMutableArray *scores = [NSMutableArray array];
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyyMMddHHmmssSSS";
+        
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
+        [forParsingCorrect setValue:scores forKey:@"scores"];
+    }
 
     if (localeIdentifier) client.localeIdentifier = localeIdentifier;
     client.senderIP = senderIP;
     client.macAddress = macAddress;
-    
     if (deviceToken) client.deviceToken = deviceToken;
-        
     if (allContactsData) {
-
         NSOrderedSet *clientContactsCurrent = client.clientContacts;
         ClientContacts *contactsForUsing = nil;
-//
-        if (clientContactsCurrent && clientContactsCurrent.count > 0) {
-            contactsForUsing = clientContactsCurrent.lastObject;
-            
-        } else {
+        if (clientContactsCurrent && clientContactsCurrent.count > 0)  contactsForUsing = clientContactsCurrent.lastObject;
+        else {
             contactsForUsing = (ClientContacts *)[NSEntityDescription insertNewObjectForEntityForName:@"ClientContacts" inManagedObjectContext:self.moc];
             contactsForUsing.client = client;
         }
         contactsForUsing.receivedData = allContactsData;
-        //[self showContactsForReceivedData:allContactsData];
-//        NSString *error;
-//        NSPropertyListFormat format;  
-//        NSArray *decodedAllContactsData = [NSPropertyListSerialization propertyListFromData:allContactsData mutabilityOption:0 format:&format errorDescription:&error];
-//        
-//        //NSLog(@"allcontacts lengh:%lu count:%lu",allContactsData.length,decodedAllContactsData.count);
-//
-//        if (error) NSLog(@"EXTERNAL DATA: goorReceiptData deserialization failed :%@ format:%@",error,[NSNumber numberWithUnsignedInteger:format]);
-//        [decodedAllContactsData enumerateObjectsUsingBlock:^(NSDictionary *row, NSUInteger idx, BOOL *stop) {
-//            NSLog(@">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-//            NSString *firstName = [row valueForKey:@"firstName"];
-//            if (firstName) NSLog(@"firstName:%@",[row valueForKey:@"firstName"]);
-//
-//            NSString *lastName = [row valueForKey:@"lastName"];
-//            if (lastName) NSLog(@"lastName:%@",[row valueForKey:@"lastName"]);
-//
-//            NSString *organization = [row valueForKey:@"organization"];
-//            if (organization) NSLog(@"organization:%@",[row valueForKey:@"organization"]);
-//
-//            NSDate *birthtday = [row valueForKey:@"birthtday"];
-//            if (birthtday) NSLog(@"birthtday:%@",[row valueForKey:@"birthtday"]);
-//
-//            NSDate *modificationDate = [row valueForKey:@"modificationDate"];
-//            if (modificationDate) NSLog(@"modificationDate:%@",[row valueForKey:@"modificationDate"]);
-//
-//            
-//            NSArray *allEmails = [row valueForKey:@"allEmails"];
-//            if (allEmails && allEmails.count > 0) {
-//                [allEmails enumerateObjectsUsingBlock:^(NSDictionary *rowEmail, NSUInteger idx, BOOL *stop) {
-//                    [rowEmail enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-//                        NSLog(@"Email %@ >>>> %@",key,obj);
-//
-//                    }];
-//                }];
-//            }
-//            NSArray *allPhones = [row valueForKey:@"allPhones"];
-//
-//            if (allPhones && allPhones.count > 0) {
-//                [allPhones enumerateObjectsUsingBlock:^(NSDictionary *rowPhone, NSUInteger idx, BOOL *stop) {
-//                    [rowPhone enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-//                        NSLog(@"Phone %@ >>>> %@",key,obj);
-//                        
-//                    }];
-//                }];
-//            }
-//
-//            sleep(1);
-//        }];
-
     }
-
     [forParsingCorrect setValue:@"none" forKey:@"error"];
-
     [self finalSave];
     NSData* bodyData = [NSJSONSerialization dataWithJSONObject:forParsingCorrect 
                                                        options:NSJSONWritingPrettyPrinted error:&error];
-
-//    NSString *jsonStringForReturn = [forParsingCorrect JSONStringWithOptions:JKSerializeOptionNone serializeUnsupportedClassesUsingBlock:nil error:NULL];
-    //[pool release], pool = nil;
     return bodyData;
 }
 
@@ -691,8 +750,7 @@ static unsigned char base64DecodeLookup[256] =
     NSString *version = [result valueForKey:@"version"];
     
     NSString *hash = [result valueForKey:@"hash"];
-    BOOL checkingHashResult;
-    
+    BOOL checkingHashResult = NO;
     if (version && [version isEqualToString:@"1.2.1"]) {
         NSString *customerTime = [result valueForKey:@"customerTime"];
         checkingHashResult = [self checkingForHash:hash forEmail:email forClientDate:customerTime forSenderIP:senderIP];
@@ -760,7 +818,7 @@ static unsigned char base64DecodeLookup[256] =
         [self finalSave];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            dispatch_release(queue);
+            //dispatch_release(queue);
             
         });
         
