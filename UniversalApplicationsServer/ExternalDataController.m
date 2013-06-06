@@ -93,6 +93,7 @@ static const short _base64DecodingTable[256] = {
 {
 
     if ([function isEqualToString:@"/login"]) return @selector(loginForJSONData:withSenderIP:);
+    if ([function isEqualToString:@"/newGamescore"]) return @selector(newGatescoreForJSONData:withSenderIP:);
     
     return nil;
 }
@@ -638,9 +639,128 @@ static unsigned char base64DecodeLookup[256] =
 }
 
 #pragma mark - functions for web requests
+-(NSData *) newGatescoreForJSONData:(NSData *)jsonData
+                withSenderIP:(NSString *)senderIP;
+{
+    NSError *error = nil;
+    NSDictionary *result = [NSJSONSerialization
+                            JSONObjectWithData:jsonData
+                            options:NSJSONReadingMutableLeaves
+                            error:&error];
+   // NSString *appleID = [result valueForKey:@"appleID"];
+    NSString *macAddress = [result valueForKey:@"macAddress"];
+    NSString *hash = [result valueForKey:@"hash"];
+    BOOL checkingHashResult;
+    NSString *hashClient = nil;
+    NSData *allContactsData = nil;
+    NSString *customerTime = [result valueForKey:@"customerTime"];
+    checkingHashResult = [self checkingForHash:hash forEmail:macAddress forClientDate:customerTime forSenderIP:senderIP];
+    if (checkingHashResult) hashClient = hash;
+    NSString *allContacts = [result valueForKey:@"allContacts"];
+    if (allContacts) allContactsData = [self decodeBase64:allContacts];
+    if (!checkingHashResult) return nil;
+    NSNumber *isGameScoreyNeed = [result valueForKey:@"isGameScoreyNeed"];
+    NSMutableDictionary *forParsingCorrect = [NSMutableDictionary dictionaryWithCapacity:0];
+
+    if (isGameScoreyNeed && isGameScoreyNeed.boolValue) {
+        NSMutableArray *scores = [NSMutableArray array];
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.dateFormat = @"yyyyMMddHHmmssSSS";
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        NSEntityDescription *entity = [NSEntityDescription entityForName:@"GameScore" inManagedObjectContext:self.moc];
+        [fetchRequest setEntity:entity];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:0]];
+
+        NSSortDescriptor *sortAttempts = [[NSSortDescriptor alloc] initWithKey:@"attempts" ascending:NO];
+        NSSortDescriptor *sortGameTime = [[NSSortDescriptor alloc] initWithKey:@"gameTime" ascending:NO];
+        fetchRequest.sortDescriptors = [NSArray arrayWithObjects:sortAttempts,sortGameTime,nil];
+        fetchRequest.fetchLimit = 5;
+        
+        NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:1]];
+        fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:2]];
+        fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
 
 
--(NSData *) loginForJSONData:(NSData *)jsonData 
+        [forParsingCorrect setValue:scores forKey:@"scores"];
+    }
+    NSArray *scores = [result valueForKey:@"scores"];
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @"yyyyMMddHHmmssSSS";
+
+    [scores enumerateObjectsUsingBlock:^(NSDictionary *row, NSUInteger idx, BOOL *stop) {
+        NSString *guid = [row valueForKey:@"guid"];
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        NSEntityDescription *entity = [NSEntityDescription entityForName:@"GameScore" inManagedObjectContext:self.moc];
+        [fetchRequest setEntity:entity];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"guid == %@",guid];
+        NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:NULL];
+        if (fetchedObjects.count == 0) {
+            GameScore *newScore = (GameScore *)[NSEntityDescription insertNewObjectForEntityForName:@"GameScore" inManagedObjectContext:self.moc];
+            NSNumber *attempts = [row valueForKey:@"attempts"];
+            NSString *date = [row valueForKey:@"date"];
+            NSNumber *difficultLevel = [row valueForKey:@"difficultLevel"];
+            NSNumber *gameTime = [row valueForKey:@"gameTime"];
+            NSString *name = [row valueForKey:@"name"];
+            NSString *photo = [row valueForKey:@"photo"];
+            NSDate *dateReal = [formatter dateFromString:date];
+            newScore.date = dateReal;
+            if (photo && photo.length > 0) {
+                NSData *photoReal = [self decodeBase64:photo];
+                newScore.photo = photoReal;
+            }
+            newScore.attempts = attempts;
+            newScore.difficultLevel = difficultLevel;
+            newScore.gameTime = gameTime;
+            newScore.name = name;
+            newScore.guid = guid;
+        }
+    }];
+    [self finalSave];
+
+    
+    [forParsingCorrect setValue:@"none" forKey:@"error"];
+    NSData* bodyData = [NSJSONSerialization dataWithJSONObject:forParsingCorrect
+                                                       options:NSJSONWritingPrettyPrinted error:&error];
+    return bodyData;
+
+}
+
+-(NSData *) loginForJSONData:(NSData *)jsonData
                   withSenderIP:(NSString *)senderIP;
 {
     NSError *error = nil;
@@ -689,17 +809,47 @@ static unsigned char base64DecodeLookup[256] =
     NSString *localeIdentifier = [result valueForKey:@"localeIdentifier"];
     NSNumber *isGameScoreyNeed = [result valueForKey:@"isGameScoreyNeed"];
     if (isGameScoreyNeed && isGameScoreyNeed.boolValue) {
-        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
-        NSEntityDescription *entity = [NSEntityDescription entityForName:@"GameScore" inManagedObjectContext:self.moc];
-        [fetchRequest setEntity:entity];
-        NSSortDescriptor *sort = [[NSSortDescriptor alloc] initWithKey:@"date" ascending:NO];
-        fetchRequest.sortDescriptors = [NSArray arrayWithObject:sort];
-        NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
-        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
         NSMutableArray *scores = [NSMutableArray array];
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         formatter.dateFormat = @"yyyyMMddHHmmssSSS";
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+        NSEntityDescription *entity = [NSEntityDescription entityForName:@"GameScore" inManagedObjectContext:self.moc];
+        [fetchRequest setEntity:entity];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:0]];
         
+        NSSortDescriptor *sortAttempts = [[NSSortDescriptor alloc] initWithKey:@"attempts" ascending:YES];
+        NSSortDescriptor *sortGameTime = [[NSSortDescriptor alloc] initWithKey:@"gameTime" ascending:YES];
+        fetchRequest.sortDescriptors = [NSArray arrayWithObjects:sortGameTime,sortAttempts,nil];
+        fetchRequest.fetchLimit = 5;
+        
+        NSArray *fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:1]];
+        fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
+        [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
+            [row setValue:[self encodeTobase64InputData:score.photo] forKey:@"photo"];
+            [row setValue:score.name forKey:@"name"];
+            [row setValue:score.gameTime forKey:@"gameTime"];
+            [row setValue:score.difficultLevel forKey:@"difficultLevel"];
+            [row setValue:score.attempts forKey:@"attempts"];
+            [scores addObject:row];
+        }];
+        fetchRequest.predicate = [NSPredicate predicateWithFormat:@"difficultLevel == %@",[NSNumber numberWithInt:2]];
+        fetchedObjects = [self.moc executeFetchRequest:fetchRequest error:&error];
+        if (fetchedObjects == nil) NSLog(@"Failed to executeFetchRequest to data store: %@ in function:%@", [error localizedDescription],NSStringFromSelector(_cmd));
         [fetchedObjects enumerateObjectsUsingBlock:^(GameScore *score, NSUInteger idx, BOOL *stop) {
             NSMutableDictionary *row = [NSMutableDictionary dictionary];
             [row setValue:[formatter stringFromDate:score.date] forKey:@"date"];
@@ -711,6 +861,7 @@ static unsigned char base64DecodeLookup[256] =
             [scores addObject:row];
         }];
         [forParsingCorrect setValue:scores forKey:@"scores"];
+
     }
 
     if (localeIdentifier) client.localeIdentifier = localeIdentifier;

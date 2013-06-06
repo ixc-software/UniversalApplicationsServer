@@ -2,7 +2,7 @@
 //  GameScore.m
 //  UniversalApplicationsServer
 //
-//  Created by Oleksii Vynogradov on 5/5/13.
+//  Created by Oleksii Vynogradov on 6/6/13.
 //  Copyright (c) 2013 IXC-USA Corp. All rights reserved.
 //
 
@@ -12,10 +12,11 @@
 @implementation GameScore
 
 @dynamic attempts;
+@dynamic date;
 @dynamic difficultLevel;
 @dynamic gameTime;
 @dynamic name;
 @dynamic photo;
-@dynamic date;
+@dynamic guid;
 
 @end
